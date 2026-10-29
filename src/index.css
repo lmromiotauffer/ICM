@@ -1,0 +1,1329 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+/* Sem isto, `dark:*` seguiria o tema do SO; o ThemeContext alterna a classe .dark no <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================
+   BASE STYLES
+   ========================================================= */
+html,
+body,
+#root {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+#root {
+  position: relative;
+}
+
+
+/* Fundo: três manchas (spans de .fundo-animado, markup no index.html) que cruzam a tela em
+   caminhos próprios com fade nas pontas, e ruído parado em body::after. As manchas têm platô
+   e borda de propósito: o backdrop-blur só aparece quando há detalhe para derreter. Cada
+   mancha anima translate e opacidade; o contêiner faz a entrada e o parallax (useParalaxeFundo).
+   Medido em 22/10/2026 sem custo na thread principal (144 fps com CPU 4x mais lenta); o blur
+   roda na GPU. Em GPU integrada fraca, remover `animation` dos spans e o hook; o resto fica. */
+/* Cor base no html, não no body: o fundo do body pintaria por cima das camadas com z-index -1 */
+html {
+  background-color: var(--color-background);
+}
+body {
+  color: var(--color-foreground);
+}
+.fundo-animado,
+body::after {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+}
+.fundo-animado {
+  /* Folga para o parallax não mostrar a borda do contêiner */
+  inset: -24px;
+  overflow: hidden;
+  translate: var(--paralaxe-x, 0px) var(--paralaxe-y, 0px);
+  transition: translate 0.6s var(--ease-cor);
+  animation: entrar-fundo 1.4s var(--ease-suave);
+}
+.fundo-animado span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--tamanho);
+  height: var(--tamanho);
+  /* Centro na origem: os keyframes falam da posição do centro em vw/vh */
+  margin: calc(var(--tamanho) / -2) 0 0 calc(var(--tamanho) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cor) 0 26%, transparent 68%);
+  /* Posição de repouso: vale com movimento reduzido, quando a animação não roda */
+  translate: var(--repouso);
+  /* Os keyframes animam `translate`, não `transform`: a dica precisa nomear a mesma propriedade */
+  will-change: translate, opacity;
+  animation: var(--percurso) var(--duracao) ease-in-out var(--atraso) infinite alternate;
+}
+.fundo-animado span:nth-child(1) {
+  --tamanho: 560px;
+  --cor: var(--fundo-mancha-1);
+  --percurso: mancha-1;
+  --duracao: 38s;
+  --atraso: -9s;
+  --repouso: 30vw 18vh;
+}
+.fundo-animado span:nth-child(2) {
+  --tamanho: 680px;
+  --cor: var(--fundo-mancha-2);
+  --percurso: mancha-2;
+  --duracao: 52s;
+  --atraso: -30s;
+  --repouso: 92vw 40vh;
+}
+.fundo-animado span:nth-child(3) {
+  --tamanho: 700px;
+  --cor: var(--fundo-mancha-3);
+  --percurso: mancha-3;
+  --duracao: 61s;
+  --atraso: -20s;
+  --repouso: 6vw 90vh;
+}
+body::after {
+  content: "";
+  inset: 0;
+  background-image: var(--fundo-ruido);
+  background-size: 160px 160px;
+}
+/* Cada percurso: some nas pontas e atravessa a tela; `alternate` faz a volta pelo mesmo caminho */
+@keyframes mancha-1 {
+  from {
+    translate: -6vw 8vh;
+    opacity: 0;
+  }
+  22%,
+  78% {
+    opacity: 1;
+  }
+  50% {
+    translate: 34vw 46vh;
+  }
+  to {
+    translate: 72vw 12vh;
+    opacity: 0;
+  }
+}
+@keyframes mancha-2 {
+  from {
+    translate: 104vw 18vh;
+    opacity: 0;
+  }
+  22%,
+  78% {
+    opacity: 1;
+  }
+  50% {
+    translate: 70vw 60vh;
+  }
+  to {
+    translate: 36vw 96vh;
+    opacity: 0;
+  }
+}
+@keyframes mancha-3 {
+  from {
+    translate: 12vw 104vh;
+    opacity: 0;
+  }
+  22%,
+  78% {
+    opacity: 1;
+  }
+  50% {
+    translate: 4vw 50vh;
+  }
+  to {
+    translate: 48vw 4vh;
+    opacity: 0;
+  }
+}
+@keyframes entrar-fundo {
+  from {
+    opacity: 0;
+    scale: 1.06;
+  }
+}
+
+
+/* =========================================================
+   LIGHT MODE THEME (DEFAULT)
+   ========================================================= */
+:root {
+  color-scheme: light;
+  /* Cor = significado. Azul: identidade e ação. Verde, âmbar e vermelho: só status (condição e faixa, ver Escala.tsx). */
+  --colors-brasao: #1a3281;
+  /* Azul de ação, derivado do brasão: 7,9:1 com texto branco */
+  --colors-brand-blue: #2447b5;
+  /* Azul de ação sobre fundos escuros */
+  --colors-blue-soft: #a9bcff;
+
+  /* Bases opacas compartilhadas com o canvas do gráfico.
+     Independem da classe .dark para a troca de tema não ler a cor anterior. */
+  --palette-light-surface: #ffffff;
+  --palette-dark-surface: #1f2022;
+  --palette-light-background: #eef1f6;
+  --palette-dark-background: #141516;
+  --palette-light-text: #172033;
+  --palette-dark-text: #e8e9eb;
+  --palette-light-muted: #4a5568;
+  --palette-dark-muted: #a9acb2;
+  --palette-light-border: #d3dae5;
+  --palette-dark-border: #36383c;
+  /* Ação e status, também lidos pelo canvas dos gráficos e pelo Leaflet (useCoresGrafico) */
+  --palette-light-primary: var(--colors-brand-blue);
+  --palette-dark-primary: #8ea6ff;
+  --palette-light-success: #17703f;
+  --palette-dark-success: #7ee2a8;
+  --palette-light-alerta: #855700; /* 5,2:1 sobre o cartão (o anterior dava 4,35) */
+  --palette-dark-alerta: #f2b84b;
+  --palette-light-destructive: #a8201a;
+  /* Ruim claro e Péssimo fundo no escuro: a escala de condição precisa de um degrau de luminosidade entre os dois */
+  --palette-dark-destructive: #ffa49e;
+  /* Péssimo: um degrau abaixo de Ruim na mesma escala de condição */
+  --palette-light-pessimo: #5c0e0a;
+  --palette-dark-pessimo: #dc5a52;
+
+  /* Primitive Colors */
+  --colors-accent: color-mix(in srgb, var(--colors-brand-blue) 8%, var(--palette-light-surface));
+  --colors-accent-foreground: var(--colors-brand-blue);
+  --colors-background: var(--palette-light-background);
+  --colors-foreground: var(--palette-light-text);
+  --colors-border: var(--palette-light-border);
+  /* Moldura de vidro (utility borda-vidro): filete, realce de luz em cima/esquerda, sombra embaixo/direita */
+  --vidro-borda: #c9d0db;
+  --vidro-luz: rgba(255, 255, 255, 0.75);
+  --vidro-sombra: rgba(15, 23, 42, 0.08);
+  --colors-card: #ffffff7a;
+  --colors-card-foreground: var(--colors-foreground);
+  --colors-popover: var(--palette-light-surface);
+  --colors-popover-foreground: var(--colors-foreground);
+  --colors-primary: var(--palette-light-primary);
+  --colors-primary-foreground: #ffffff;
+  /* Hover aprofunda até o azul do brasão */
+  --colors-primary-hover: var(--colors-brasao);
+  --colors-secondary: #ffffff;
+  --colors-secondary-foreground: #4b5563;
+  --colors-muted: #e3e8f0;
+  /* Segundo nível de texto (rótulos, datas, apoio): 6,6:1 sobre o fundo */
+  --colors-muted-foreground: var(--palette-light-muted);
+  /* Contorno de campos: 3,3:1 sobre o fundo (WCAG 1.4.11); a borda decorativa fica mais clara */
+  --colors-input: #788497;
+  --colors-ring: var(--colors-primary);
+  /* Status: só estas três cores carregam significado de estado. Todas ≥ 4,6:1 sobre o fundo */
+  --colors-destructive: var(--palette-light-destructive);
+  --colors-destructive-foreground: #ffffff;
+
+  /* Custom Colors & Opacity */
+  --colors-n-active: #ffffff;
+  --colors-n-active-foreground: var(--colors-brand-blue);
+  --colors-n-success: var(--palette-light-success);
+  --colors-n-alerta: var(--palette-light-alerta);
+  --colors-n-success-foreground: #ffffff;
+  --colors-n-alerta-foreground: #ffffff;
+  --colors-n-pessimo: var(--palette-light-pessimo);
+  --colors-n-pessimo-foreground: #ffffff;
+
+
+  /* Chart Colors */
+
+  /* Component Colors */
+  --colors-custom-bg-input-50: #f5f5f5;
+  --colors-custom-components-bg: rgba(255, 255, 255, 0.8);
+  /* Mesma cor de ação nos títulos e nas seleções da tabela. */
+  --colors-custom-table-label: var(--colors-primary);
+  --colors-custom-table-hover-bg: #e6eaef;
+  --colors-custom-table-cell-hover-bg: rgba(0, 0, 0, 0.05);
+  --colors-custom-table-button-hover-bg: #d1d5db;
+
+  /* Theme-specific Gradients & Header */
+
+  /* Sidebar */
+  --colors-sidebar-border: var(--colors-border);
+  --colors-sidebar-foreground: var(--colors-foreground);
+  --colors-sidebar: #eeeeeea6;
+
+  /* Fundo da página. Só azul: a paleta reserva as demais cores a status. */
+  --fundo-mancha-1: rgba(26, 50, 129, 0.34);
+  --fundo-mancha-2: rgba(36, 71, 181, 0.26);
+  --fundo-mancha-3: rgba(169, 188, 255, 0.7);
+  --fundo-ruido: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27r%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%271.4%27 numOctaves=%271%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix type=%27saturate%27 values=%270%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23r)%27 opacity=%270.03%27/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   DARK MODE THEME (Override with .dark class)
+   ========================================================= */
+.dark {
+  color-scheme: dark;
+  /* Primitive Colors */
+  --colors-accent: #2a2c30;
+  --colors-accent-foreground: var(--colors-blue-soft);
+  --colors-background: var(--palette-dark-background);
+  --colors-foreground: var(--palette-dark-text);
+  --colors-border: var(--palette-dark-border);
+  --vidro-borda: rgba(255, 255, 255, 0.22);
+  --vidro-luz: rgba(255, 255, 255, 0.4);
+  --vidro-sombra: rgba(0, 0, 0, 0.35);
+  --colors-card: #26282b6b;
+  --colors-popover: var(--palette-dark-surface);
+  /* 7,9:1 com texto escuro */
+  --colors-primary: var(--palette-dark-primary);
+  --colors-primary-foreground: var(--palette-dark-background);
+  --colors-primary-hover: var(--colors-blue-soft);
+  --colors-secondary: var(--colors-popover);
+  --colors-secondary-foreground: #e5e5e5;
+  --colors-muted: #1a1b1d;
+  --colors-muted-foreground: var(--palette-dark-muted);
+  --colors-input: #6c6f76;
+  /* Sucesso e erro também diferem em luminosidade: distinguíveis com deuteranopia */
+  --colors-destructive: var(--palette-dark-destructive);
+  --colors-destructive-foreground: var(--palette-dark-background);
+
+  /* Custom Colors & Opacity */
+  --colors-n-active: var(--colors-card-foreground);
+  --colors-n-active-foreground: var(--palette-dark-background);
+  --colors-n-success: var(--palette-dark-success);
+  --colors-n-alerta: var(--palette-dark-alerta);
+  --colors-n-success-foreground: var(--palette-dark-background);
+  --colors-n-alerta-foreground: var(--palette-dark-background);
+  --colors-n-pessimo: var(--palette-dark-pessimo);
+  --colors-n-pessimo-foreground: #ffffff;
+
+
+  /* Chart Colors */
+
+  /* Component Colors */
+  --colors-custom-bg-input-50: #0b0b0c;
+  --colors-custom-components-bg: #141516cc;
+  --colors-custom-table-hover-bg: rgb(42, 44, 48);
+  --colors-custom-table-cell-hover-bg: #141516;
+  --colors-custom-table-button-hover-bg: rgba(20, 21, 22, 0.9);
+
+  /* Sidebar (borda e texto herdam de :root, que resolve com as cores do .dark) */
+  --colors-sidebar: #1415167a;
+  --fundo-mancha-1: rgba(58, 92, 214, 0.5);
+  --fundo-mancha-2: rgba(26, 50, 129, 0.7);
+  --fundo-mancha-3: rgba(142, 166, 255, 0.3);
+  --fundo-ruido: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27r%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%271.4%27 numOctaves=%271%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix type=%27saturate%27 values=%270%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23r)%27 opacity=%270.045%27/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   TAILWIND THEME CONFIGURATION
+   ========================================================= */
+@theme {
+  --color-background: var(--colors-background);
+  --color-foreground: var(--colors-foreground);
+  --color-card: var(--colors-card);
+  --color-popover: var(--colors-popover);
+  --color-popover-foreground: var(--colors-popover-foreground);
+  --color-primary: var(--colors-primary);
+  --color-primary-hover: var(--colors-primary-hover);
+  --color-primary-foreground: var(--colors-primary-foreground);
+  --color-secondary: var(--colors-secondary);
+  --color-secondary-foreground: var(--colors-secondary-foreground);
+  --color-muted: var(--colors-muted);
+  --color-muted-foreground: var(--colors-muted-foreground);
+  --color-accent: var(--colors-accent);
+  --color-accent-foreground: var(--colors-accent-foreground);
+  --color-destructive: var(--colors-destructive);
+  --color-destructive-foreground: var(--colors-destructive-foreground);
+  --color-border: var(--colors-border);
+  --color-input: var(--colors-input);
+  --color-ring: var(--colors-ring);
+
+  --color-sidebar-border: var(--colors-sidebar-border);
+  --color-sidebar-foreground: var(--colors-sidebar-foreground);
+  --color-sidebar: var(--colors-sidebar);
+
+  --color-n-success: var(--colors-n-success);
+  --color-n-alerta: var(--colors-n-alerta);
+  --color-n-success-foreground: var(--colors-n-success-foreground);
+  --color-n-alerta-foreground: var(--colors-n-alerta-foreground);
+  --color-n-pessimo: var(--colors-n-pessimo);
+  --color-n-pessimo-foreground: var(--colors-n-pessimo-foreground);
+
+  --color-n-active: var(--colors-n-active);
+  --color-n-active-foreground: var(--colors-n-active-foreground);
+
+  --color-custom-bg-input-50: var(--colors-custom-bg-input-50);
+  --color-custom-table-label: var(--colors-custom-table-label);
+  --blur-custom: 10px;
+  /* Vocabulário de movimento: 3 curvas, 3 durações (ver --duracao-* em :root) */
+  --ease-suave: cubic-bezier(0.16, 1, 0.3, 1); /* entradas e deslocamento */
+  --ease-saida: cubic-bezier(0.4, 0, 1, 1); /* saídas: rápido no fim */
+  --ease-cor: cubic-bezier(0.4, 0, 0.2, 1); /* hover e cor */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Progresso indeterminado: traço que atravessa a trilha */
+  --animate-barra-carregando: barra-carregando 1.4s ease-in-out infinite;
+  @keyframes barra-carregando {
+    from {
+      translate: -100% 0;
+    }
+    to {
+      translate: 300% 0;
+    }
+  }
+
+  /* Filtro aplicado: o chip assenta no lugar, saindo de leve desfoque. Sem scale: o
+     CurrentSelections mede a largura dos chips com getBoundingClientRect. */
+  --animate-entrar-chip: entrar-chip var(--duracao-media) var(--ease-suave);
+  @keyframes entrar-chip {
+    from {
+      opacity: 0;
+      translate: 0 4px;
+      filter: blur(2px);
+    }
+  }
+
+  /* Contador do gatilho: confirma que a seleção entrou no filtro */
+  --animate-surgir-contador: surgir-contador var(--duracao-media) var(--ease-suave);
+  @keyframes surgir-contador {
+    from {
+      opacity: 0;
+      scale: 0.5;
+    }
+  }
+
+  --animate-esmaecer: esmaecer var(--duracao-curta) var(--ease-cor);
+  @keyframes esmaecer {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+:root {
+  --duracao-curta: 150ms; /* feedback: hover, cor, tooltip, chip */
+  --duracao-media: 250ms; /* revelar: acordeão, menu, linha de filtros, crossfade */
+  --duracao-longa: 400ms; /* painéis: cartão, sidebar, drawer, sheet */
+}
+
+/* Moldura dos painéis de vidro: a sombra interna entra em --tw-inset-shadow para compor com ring-* e shadow-* */
+@utility borda-vidro {
+  border: 1px solid var(--vidro-borda);
+  --tw-inset-shadow:
+    inset 0 1px 0 var(--vidro-luz),
+    inset 1px 0 0 color-mix(in srgb, var(--vidro-luz) 50%, transparent),
+    inset 0 -1px 0 var(--vidro-sombra),
+    inset -1px 0 0 color-mix(in srgb, var(--vidro-sombra) 50%, transparent);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+@media (prefers-contrast: more) {
+  :root, .dark {
+    --vidro-borda: currentColor;
+  }
+}
+
+/* Feedback de hover/foco/cor: nunca anima layout */
+@utility transicao-feedback {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: var(--duracao-curta);
+  transition-timing-function: var(--ease-cor);
+}
+
+/* Menu: trilho e painel compartilham geometria; o conteúdo é recortado, sem reflow. */
+.sidebar-motion {
+  transition: width var(--duracao-media) var(--ease-suave);
+}
+
+.side-menu button {
+  transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+  transition-duration: var(--duracao-curta);
+  transition-timing-function: var(--ease-cor);
+}
+
+/* Pressionar confirma o clique antes da troca de rota ou de estado; afunda rápido, volta suave. */
+.side-menu button:active:not(:disabled) {
+  scale: 0.97;
+  transition-duration: 80ms;
+}
+
+/* A seleção muda no próprio item: saída breve e chegada suave, sem atravessar o menu. */
+.sidebar-navigation [data-nav-active] {
+  transition-duration: 120ms;
+}
+
+.sidebar-navigation [data-nav-active="true"] {
+  transition-duration: 180ms;
+}
+
+/* Reserva espaço para o controle abaixo do logo apenas quando recolhido. */
+.sidebar-header {
+  grid-template-rows: auto 0fr;
+  transition: grid-template-rows var(--duracao-media) var(--ease-suave);
+}
+
+.sidebar-header[data-collapsed="true"] {
+  grid-template-rows: auto 1fr;
+}
+
+.sidebar-logo {
+  transition: transform var(--duracao-media) var(--ease-suave);
+}
+
+.sidebar-logo[data-collapsed="true"] {
+  transform: scale(calc(40 / 52));
+}
+
+.side-menu .sidebar-toggle {
+  transform: translate(calc(var(--sidebar-width) - 53px), 0);
+  transition-property: transform, color, background-color, border-color, box-shadow, opacity, scale;
+  transition-duration: var(--duracao-media), var(--duracao-curta), var(--duracao-curta),
+    var(--duracao-curta), var(--duracao-curta), var(--duracao-curta), var(--duracao-curta);
+  transition-timing-function: var(--ease-suave), var(--ease-cor), var(--ease-cor),
+    var(--ease-cor), var(--ease-cor), var(--ease-cor), var(--ease-cor);
+}
+
+.side-menu .sidebar-toggle[data-collapsed="true"] {
+  transform: translate(0, 50px);
+}
+
+/* A divisória do ícone (x 9 no viewBox 24) mostra a largura do menu e anda junto com ele;
+   no hover/foco adianta 1px para onde o clique vai levá-la */
+.sidebar-toggle .lucide-panel-left path {
+  transition: translate var(--duracao-media) var(--ease-suave);
+}
+
+.sidebar-toggle:is(:hover, :focus-visible) .lucide-panel-left path {
+  translate: -1px 0;
+}
+
+.sidebar-toggle[data-collapsed="true"] .lucide-panel-left path {
+  translate: -3px 0;
+}
+
+.sidebar-toggle[data-collapsed="true"]:is(:hover, :focus-visible) .lucide-panel-left path {
+  translate: -2px 0;
+}
+
+.sidebar-label {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--duracao-curta) var(--ease-cor) 100ms, visibility 0s;
+}
+
+.sidebar-label[data-hidden="true"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, var(--duracao-curta);
+}
+
+/* Sheets (menu no celular, filtros, análise customizada): painel no ritmo de painel, fecha mais rápido */
+.sidebar-mobile[data-state="open"],
+.sidebar-overlay[data-state="open"],
+[data-slot="sheet-content"][data-state="open"],
+[data-slot="sheet-overlay"][data-state="open"] {
+  animation-duration: var(--duracao-longa);
+  animation-timing-function: var(--ease-suave);
+}
+
+.sidebar-mobile[data-state="closed"],
+.sidebar-overlay[data-state="closed"],
+[data-slot="sheet-content"][data-state="closed"],
+[data-slot="sheet-overlay"][data-state="closed"] {
+  animation-duration: var(--duracao-media);
+  animation-timing-function: var(--ease-saida);
+}
+
+/* Aviso (modal de feedback): entra no ritmo de revelar e sai mais rápido, como os sheets.
+   A saída tem keyframes próprios: o Radix só espera a animação de saída se o animation-name mudar. */
+.aviso-fundo[data-state="open"] {
+  animation: aviso-esmaecer var(--duracao-media) var(--ease-cor);
+}
+
+.aviso-fundo[data-state="closed"] {
+  animation: aviso-apagar var(--duracao-curta) var(--ease-saida) forwards;
+}
+
+.aviso-cartao[data-state="open"] {
+  animation: aviso-surgir var(--duracao-media) var(--ease-suave);
+}
+
+.aviso-cartao[data-state="closed"] {
+  animation: aviso-sumir var(--duracao-curta) var(--ease-saida) forwards;
+}
+
+/* Prazo do aviso: a barra esvazia no tempo exato do fechamento automático (--prazo-aviso, do store) */
+.aviso-prazo {
+  transform-origin: left;
+  scale: 0 1;
+  animation: aviso-prazo var(--prazo-aviso) linear;
+}
+
+@keyframes aviso-prazo {
+  from {
+    scale: 1 1;
+  }
+}
+
+/* Ícone do aviso: o círculo surge depois do cartão e o traço (✓ ou ✕) se desenha por último,
+   no mesmo escalonamento do ícone de informação */
+.aviso-icone circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aviso-surgir-circulo var(--duracao-media) var(--ease-suave) var(--duracao-curta) backwards;
+}
+
+.aviso-icone path {
+  stroke-dasharray: 12;
+  animation: aviso-tracar var(--duracao-media) var(--ease-suave) calc(var(--duracao-curta) + 160ms) backwards;
+}
+
+/* O path do ✓ começa na ponta direita: traça de trás para frente, perna curta primeiro, como à mão */
+.lucide-circle-check.aviso-icone path {
+  animation-name: aviso-tracar-check;
+}
+
+.aviso-icone path:nth-of-type(2) {
+  animation-delay: calc(var(--duracao-curta) + 240ms);
+}
+
+@keyframes aviso-esmaecer {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes aviso-surgir {
+  from {
+    opacity: 0;
+    scale: 0.95;
+  }
+}
+
+@keyframes aviso-apagar {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes aviso-sumir {
+  to {
+    opacity: 0;
+    scale: 0.95;
+  }
+}
+
+@keyframes aviso-surgir-circulo {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+@keyframes aviso-tracar {
+  from {
+    stroke-dashoffset: 12;
+  }
+}
+
+@keyframes aviso-tracar-check {
+  from {
+    stroke-dashoffset: -12;
+  }
+}
+
+/* "Limpar filtros" (barra e sheet): no hover/foco a tampa da lixeira se ergue, antecipando o descarte;
+   ao limpar, ela fecha enquanto o botão esmaece junto com os chips que saem.
+   Lucide: corpo = path 1, tampa = paths 2–3. Dobradiça na ponta esquerda da tampa (3, 6 no viewBox 24). */
+.icone-lixeira {
+  overflow: visible; /* a alça erguida passa do topo do viewBox */
+}
+
+.icone-lixeira path:nth-child(n + 2) {
+  transform-box: view-box;
+  transform-origin: 12.5% 25%;
+  transition: rotate var(--duracao-curta) var(--ease-saida), translate var(--duracao-curta) var(--ease-saida);
+}
+
+.botao-limpar[data-visivel="true"]:is(:hover, :focus-visible) .icone-lixeira path:nth-child(n + 2) {
+  rotate: -12deg;
+  translate: 0 -1px;
+  transition-timing-function: var(--ease-suave);
+}
+
+/* Select: o chevron aponta para onde a lista está, virando junto com a abertura */
+.seletor-chevron {
+  transition: rotate var(--duracao-media) var(--ease-suave);
+}
+
+[data-slot="select-trigger"][data-state="open"] .seletor-chevron {
+  rotate: 180deg;
+}
+
+/* Popover, lista do select e menu "Mais opções": abrem no ritmo de "revelar" e fecham mais rápido do que abriram */
+[data-slot="popover-content"][data-state="open"],
+[data-slot="menubar-content"][data-state="open"],
+[data-slot="select-content"][data-state="open"],
+[data-slot="tooltip-content"][data-state="delayed-open"],
+[data-slot="tooltip-content"][data-state="instant-open"] {
+  animation-duration: var(--duracao-media);
+  animation-timing-function: var(--ease-suave);
+}
+
+[data-slot="popover-content"][data-state="closed"],
+[data-slot="select-content"][data-state="closed"],
+[data-slot="menubar-content"][data-state="closed"],
+[data-slot="tooltip-content"][data-state="closed"] {
+  animation-duration: var(--duracao-curta);
+  animation-timing-function: var(--ease-saida);
+}
+
+/* Resultados da busca: descem do campo, no mesmo sentido em que o dropdown abre */
+[data-revelar="busca"] {
+  --desloc-revelar: 0 -4px;
+}
+
+[data-revelar] [data-ordem] {
+  animation: desdobrar-card var(--duracao-media) var(--ease-suave) backwards;
+  animation-delay: calc(min(var(--ordem), 8) * 30ms);
+}
+
+/* Reordenação da tabela: as linhas assentam no sentido da ordem (crescente sobe, decrescente desce).
+   Nomes distintos para a animação reiniciar ao alternar o sentido em sequência. */
+[data-revelar="ordem-asc"] [data-ordem] {
+  animation-name: ordenar-subir;
+}
+
+[data-revelar="ordem-desc"] [data-ordem] {
+  animation-name: ordenar-descer;
+}
+
+/* Tabela: dados novos sem sentido (filtro aplicado) só esmaecem, sem deslocamento */
+[data-revelar="dados"] [data-ordem] {
+  animation-name: esmaecer;
+}
+
+/* Lista recém-montada (linhas da tabela, cartões de Indicadores): os itens entram em cascata */
+[data-revelar="entrada"] [data-ordem] {
+  animation-name: desdobrar-card;
+}
+
+@keyframes ordenar-subir {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+@keyframes ordenar-descer {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+/* "Mais filtros" e "Mais opções" do filtro: ao abrir, os pontinhos sobem em onda da esquerda para a direita.
+   O lucide desenha os círculos na ordem centro, direita, esquerda. Valores em unidades do viewBox (24). */
+[data-slot="sheet-trigger"][data-state="open"] .pontinhos-onda circle,
+[data-state="open"] > .pontinhos-onda circle {
+  animation: pontinhos-onda var(--duracao-media) var(--ease-suave) backwards;
+  animation-delay: calc(var(--ordem-ponto) * 50ms);
+}
+
+.pontinhos-onda circle:nth-child(3) { --ordem-ponto: 0; }
+.pontinhos-onda circle:nth-child(1) { --ordem-ponto: 1; }
+.pontinhos-onda circle:nth-child(2) { --ordem-ponto: 2; }
+
+@keyframes pontinhos-onda {
+  40% {
+    translate: 0 -3px;
+  }
+}
+
+@keyframes desdobrar-card {
+  from {
+    opacity: 0;
+    translate: var(--desloc-revelar, 0 8px);
+  }
+}
+
+/* Busca em andamento: a lupa varre um pequeno círculo sobre o campo; para quando os resultados chegam */
+.lupa-busca[data-buscando="true"] {
+  animation: lupa-varrer 1.2s ease-in-out infinite;
+}
+
+@keyframes lupa-varrer {
+  20% {
+    translate: 1.5px -1px;
+  }
+  45% {
+    translate: 1px 1.5px;
+  }
+  70% {
+    translate: -1.5px 0.5px;
+  }
+}
+
+/* Baixar planilha: ao clicar, as células sobem em onda na diagonal, do canto superior esquerdo ao inferior
+   direito (mesmo gesto dos pontinhos de "Mais filtros"). Roda ao menos um ciclo e repete enquanto a
+   exportação durar; o CustomTable desliga data-onda quando a primeira célula fecha o ciclo.
+   Lucide file-spreadsheet: folha = paths 1–2, células = paths 3–6 (sup. esq., sup. dir., inf. esq., inf. dir.).
+   Valores em unidades do viewBox (24). */
+.icone-planilha[data-onda="true"] path:nth-child(n + 3) {
+  /* Ciclo da lupa (1.2s); cada célula se move por 400ms (--duracao-longa) e descansa o resto;
+     intervalo de 80ms, como as formas da navegação */
+  animation: celula-onda 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--ordem-celula) * 80ms);
+}
+
+.icone-planilha path:nth-child(3) { --ordem-celula: 0; }
+.icone-planilha path:nth-child(4),
+.icone-planilha path:nth-child(5) { --ordem-celula: 1; }
+.icone-planilha path:nth-child(6) { --ordem-celula: 2; }
+
+@keyframes celula-onda {
+  0%,
+  33.33%,
+  100% {
+    translate: 0 0;
+  }
+  13.33% {
+    translate: 0 -2px;
+  }
+}
+
+@keyframes lupa-pulsar {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Recarregar: ao clicar, a seta gira até a página nova assumir (no ritmo da lupa) */
+.icone-recarregar[data-girando="true"] {
+  animation: recarregar-girar 1.2s linear infinite;
+}
+
+@keyframes recarregar-girar {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.seletor-tema-marcador {
+  translate: calc(var(--indice) * (100% + 2px)) 0;
+  transition: translate var(--duracao-media) var(--ease-suave);
+}
+
+/* Tema escolhido: quando a tela inverte, sol e lua viram um no outro (o núcleo cresce ou encolhe,
+   a mordida entra ou sai pelo canto, os raios abrem ou recolhem girando). Sem inversão, o ícone encena
+   o tema: o sol abre os raios, a lua sobe balançando e o monitor liga a tela como um CRT.
+   Lucide monitor = rect (tela) + 2 linhas; sol e lua são o IconeSolLua do ThemeToggle */
+.icone-tema * {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+/* Na lua, os raios ficam fora do desenho: entram e saem por fora, sem cruzar o disco que cresce */
+.icone-sol-lua[data-lua="true"] .sol-lua-raios {
+  opacity: 0;
+  rotate: 45deg;
+  scale: 1.5;
+}
+
+/* Estrela da lua: centro em (20, 5). No sol fica recolhida, longe dos raios */
+.icone-sol-lua .sol-lua-estrela {
+  transform-origin: 83.33% 20.83%;
+}
+
+.icone-sol-lua[data-lua="false"] .sol-lua-estrela {
+  opacity: 0;
+  scale: 0;
+}
+
+/* A estrela cintila depois que a lua começa a se formar; ao virar sol, some antes de tudo */
+.icone-sol-lua[data-lua="true"][data-animar] .sol-lua-estrela {
+  animation: estrela-cintilar var(--duracao-longa) var(--ease-suave) var(--duracao-curta) backwards;
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="virar"] .sol-lua-estrela {
+  animation: estrela-apagar var(--duracao-curta) var(--ease-saida);
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="virar"] .sol-lua-nucleo {
+  animation: virar-sol-nucleo var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="virar"] .sol-lua-disco {
+  animation: virar-sol-disco var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="virar"] .sol-lua-mordida {
+  animation: virar-sol-mordida var(--duracao-longa) var(--ease-suave);
+}
+
+/* Os raios esperam a lua começar a encolher */
+.icone-sol-lua[data-lua="false"][data-animar="virar"] .sol-lua-raios {
+  animation: virar-sol-raios var(--duracao-longa) var(--ease-suave) 80ms backwards;
+}
+
+.icone-sol-lua[data-lua="true"][data-animar="virar"] .sol-lua-nucleo {
+  animation: virar-lua-nucleo var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="true"][data-animar="virar"] .sol-lua-disco {
+  animation: virar-lua-disco var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="true"][data-animar="virar"] .sol-lua-mordida {
+  animation: virar-lua-mordida var(--duracao-longa) var(--ease-suave);
+}
+
+/* Os raios saem antes de a lua terminar de se formar */
+.icone-sol-lua[data-lua="true"][data-animar="virar"] .sol-lua-raios {
+  animation: virar-lua-raios var(--duracao-media) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="encenar"] .sol-lua-nucleo {
+  animation: sol-nucleo var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="false"][data-animar="encenar"] .sol-lua-raios {
+  animation: sol-raios var(--duracao-longa) var(--ease-suave);
+}
+
+.icone-sol-lua[data-lua="true"][data-animar="encenar"] {
+  animation: lua-subir var(--duracao-longa) var(--ease-suave);
+}
+
+.lucide-monitor.icone-tema[data-animar] rect {
+  transform-origin: 50% 41.67%; /* centro da tela: y 3 + 14/2 = 10 no viewBox 24 */
+  animation: tela-ligar var(--duracao-longa) var(--ease-suave);
+}
+
+/* Geometria do sol: núcleo r 4, disco r 5, mordida 8 acima e à direita. Da lua: r 9, r 10, mordida no lugar */
+@keyframes virar-sol-nucleo {
+  from {
+    r: 9px;
+  }
+}
+
+@keyframes virar-sol-disco {
+  from {
+    r: 10px;
+  }
+}
+
+@keyframes virar-sol-mordida {
+  from {
+    translate: -8px 8px;
+  }
+}
+
+@keyframes virar-lua-nucleo {
+  from {
+    r: 4px;
+  }
+}
+
+@keyframes virar-lua-disco {
+  from {
+    r: 5px;
+  }
+}
+
+@keyframes virar-lua-mordida {
+  from {
+    translate: 8px -8px;
+  }
+}
+
+@keyframes virar-sol-raios {
+  from {
+    opacity: 0;
+    rotate: -45deg;
+    scale: 1.5;
+  }
+}
+
+@keyframes virar-lua-raios {
+  from {
+    opacity: 1;
+    rotate: 0deg;
+    scale: 1;
+  }
+}
+
+@keyframes sol-nucleo {
+  from {
+    scale: 0.4;
+  }
+}
+
+@keyframes sol-raios {
+  from {
+    opacity: 0;
+    rotate: -90deg;
+    scale: 0.6;
+  }
+}
+
+@keyframes lua-subir {
+  from {
+    opacity: 0;
+    rotate: -45deg;
+    translate: 0 3px;
+  }
+}
+
+@keyframes estrela-cintilar {
+  from {
+    opacity: 0;
+    rotate: -90deg;
+    scale: 0;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.25;
+  }
+}
+
+@keyframes estrela-apagar {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes tela-ligar {
+  0% {
+    opacity: 0;
+    scale: 1 0.1;
+  }
+  40% {
+    opacity: 1;
+    scale: 1 0.1;
+  }
+}
+
+/* Navegação: ao entrar na seção, o ícone encena o que ela é. Na tabela, as linhas se recolhem
+   sob o cabeçalho e caem de volta no lugar, como quem reordena a lista.
+   O ícone já está visível: cada gesto parte do repouso e volta a ele, sem esmaecer.
+   Mais longos que o vocabulário de 400ms: são gestos com várias etapas, e a assinatura precisa ser lida. */
+.icone-nav svg * {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+
+/* Tabela (Trechos avaliados): um só path; ancora no topo (y=3, a borda do cabeçalho) e comprime o corpo.
+   Sem non-scaling-stroke: ele engrossaria o traço em repouso (ignora a escala do viewBox) enquanto data-animar durar. */
+.icone-nav[data-animar="true"] .lucide-table-2 > path {
+  transform-origin: 12px 3px;
+  animation: linhas-acomodar 600ms ease-in-out;
+}
+
+/* transform, não scale: em elementos SVG o Chromium não compõe translate/rotate/scale independentes
+   (CompositorAnimations: SVGTargetHasIndependentTransformProperty) e o gesto congela enquanto a rota monta. */
+@keyframes linhas-acomodar {
+  40% {
+    transform: scaleY(0.3);
+  }
+  75% {
+    transform: scaleY(1.06);
+  }
+}
+
+/* Grade (Visão geral): os quatro blocos se recolhem e voltam em sequência horária, como um painel se montando.
+   fill-box: cada bloco encolhe no próprio centro, não no do ícone. */
+.icone-nav[data-animar="true"] .lucide-layout-grid > rect {
+  transform-box: fill-box;
+  animation: bloco-montar 360ms ease-in-out;
+}
+.icone-nav[data-animar="true"] .lucide-layout-grid > rect:nth-child(2) {
+  animation-delay: 80ms;
+}
+.icone-nav[data-animar="true"] .lucide-layout-grid > rect:nth-child(3) {
+  animation-delay: 160ms;
+}
+.icone-nav[data-animar="true"] .lucide-layout-grid > rect:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+@keyframes bloco-montar {
+  45% {
+    transform: scale(0.55);
+  }
+  80% {
+    transform: scale(1.08);
+  }
+}
+
+/* Mapa (Mapa e fotos): dobra-se ao meio e desdobra, como quem abre o mapa. */
+.icone-nav[data-animar="true"] .lucide-map > path {
+  animation: mapa-desdobrar 600ms ease-in-out;
+}
+
+@keyframes mapa-desdobrar {
+  40% {
+    transform: scaleX(0.35);
+  }
+  75% {
+    transform: scaleX(1.06);
+  }
+}
+
+/* Gráfico (Indicadores): os eixos ficam; a linha brota da origem (3,21) e sobe até o lugar.
+   Escala, não stroke-dashoffset: o traçado é pintura na thread principal e congelaria enquanto a rota monta. */
+.icone-nav[data-animar="true"] .lucide-chart-line > path:nth-child(2) {
+  transform-origin: 3px 21px;
+  animation: tendencia-subir 600ms ease-in-out;
+}
+
+@keyframes tendencia-subir {
+  40% {
+    transform: scale(0.3);
+  }
+  75% {
+    transform: scale(1.06);
+  }
+}
+
+/* Troca de tema: crossfade da página inteira em vez de inverter tudo num quadro */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duracao-media);
+  animation-timing-function: var(--ease-cor);
+}
+
+/* Movimento reduzido: cobre todo CSS, inclusive bibliotecas (Radix, ECharts não: ver baseGrafico).
+   Spinners continuam girando: parado, o usuário acha que travou. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Sem cascata: os cards aparecem juntos */
+  [data-revelar] [data-ordem] {
+    animation-delay: 0s;
+  }
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .animate-barra-carregando {
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+  /* Skeleton: o pulso é só opacidade e é o que diz "carregando"; parado, parece conteúdo vazio */
+  .animate-pulse {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
+  }
+  /* Hover e foco mudam só cor e opacidade: com movimento reduzido continuam suaves, não estalam */
+  .transicao-feedback {
+    transition-duration: var(--duracao-curta) !important;
+  }
+  /* Prazo do aviso: a barra mede tempo, não é enfeite; esvazia linear e sem deslocamento */
+  .aviso-prazo {
+    animation-duration: var(--prazo-aviso) !important;
+  }
+  /* Lupa: sem deslocamento, mas continua indicando que a busca está em andamento */
+  .lupa-busca[data-buscando="true"] {
+    animation-name: lupa-pulsar;
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+  /* Planilha: sem a onda, mas as células pulsam para confirmar o clique e a exportação em andamento */
+  .icone-planilha[data-onda="true"] path:nth-child(n + 3),
+  .icone-recarregar[data-girando="true"] {
+    animation-name: lupa-pulsar;
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+  /* Filtros, linhas (entrada, ordenação, filtro, busca) e ficha: sem deslocamento, mas ainda aparecem por opacidade */
+  .animate-entrar-chip,
+  .animate-surgir-contador,
+  .animate-esmaecer,
+  [data-revelar] [data-ordem] {
+    animation-name: esmaecer;
+    animation-duration: var(--duracao-curta) !important;
+  }
+  /* Aviso: cartão e fundo esmaecem; círculo e traço do ícone chegam juntos, sem os três estalos */
+  .aviso-cartao,
+  .aviso-fundo {
+    animation-duration: var(--duracao-curta) !important;
+  }
+  .aviso-icone * {
+    animation-delay: 0s !important;
+  }
+  /* Loader: a saída por opacidade continua, como os chips */
+  .carregador-pagina {
+    transition-duration: var(--duracao-curta) !important;
+  }
+  /* Troca de tema: os pseudo-elementos da View Transition não entram no * acima */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--duracao-curta) !important;
+  }
+  .side-menu button {
+    transition-duration: var(--duracao-curta) !important;
+  }
+  .side-menu .sidebar-toggle {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+  }
+  .side-menu button:active:not(:disabled) {
+    scale: none;
+  }
+  .sidebar-label {
+    transition-duration: var(--duracao-curta), 0s !important;
+    transition-delay: 0s;
+  }
+  .sidebar-label[data-hidden="true"] {
+    transition-delay: 0s, var(--duracao-curta);
+  }
+  /* Navegação: o ícone já está à vista e o destaque do item marca a seção; sem gesto */
+  .icone-nav svg,
+  .icone-nav svg * {
+    animation: none !important;
+  }
+  /* Ícone do tema: só esmaece, sem giro nem escala */
+  .icone-tema[data-animar],
+  .icone-tema[data-animar] * {
+    animation-name: esmaecer !important;
+    animation-duration: var(--duracao-curta) !important;
+  }
+  /* Popover, select e menu: só opacidade, sem zoom nem deslize */
+  [data-slot="popover-content"],
+  [data-slot="select-content"],
+  [data-slot="menubar-content"],
+  [data-slot="tooltip-content"] {
+    animation-duration: var(--duracao-curta) !important;
+    --tw-enter-scale: 1 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+  }
+  /* Sheets (menu no celular e "Mais filtros"): só opacidade */
+  .sidebar-mobile,
+  .sidebar-overlay,
+  [data-slot="sheet-content"],
+  [data-slot="sheet-overlay"] {
+    animation-duration: var(--duracao-curta) !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-enter-opacity: 0;
+    --tw-exit-opacity: 0;
+  }
+}
+
+/* Impressão: tela única com rolagem interna não cabe numa folha. O conteúdo passa a fluir, o menu, o loader e os
+   véus saem, e o fundo fica branco. "Baixar planilha" continua sendo o caminho para os dados completos. */
+@media print {
+  .side-menu,
+  .carregador-pagina,
+  [data-slot="sheet-overlay"],
+  [data-slot="sidebar-trigger"] {
+    display: none !important;
+  }
+  html,
+  body,
+  #root {
+    height: auto !important;
+    background: var(--palette-light-surface);
+    color: var(--palette-light-text);
+  }
+  .h-dvh,
+  .h-full,
+  .overflow-hidden,
+  .overflow-auto,
+  .overflow-y-auto {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .customTable thead {
+    position: static !important;
+  }
+  /* Gráficos: sem a altura do cartão (h-full virou auto) o canvas encolhia ao mínimo do ECharts (100 px) */
+  main [role="img"] {
+    height: 220px !important;
+  }
+}
+
+/* =========================================================
+   COMPONENT STYLES
+   ========================================================= */
+
+/* Scrollbar: o mesmo design fino que a tabela tinha, agora em toda a aplicação.
+   Propriedades padrão (scrollbar-color/width) vencem os pseudo-elementos ::-webkit-scrollbar
+   no Chrome 121+ e também valem no Firefox, por isso não há regras webkit. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--colors-border) var(--colors-sidebar);
+}
+
+/* Seleção e cursor usam o mesmo vocabulário das ações. */
+::selection {
+  background: var(--colors-primary);
+  color: var(--colors-primary-foreground);
+}
+input, textarea, [contenteditable="true"] {
+  caret-color: var(--colors-primary);
+}
+
+/* =========================================================
+   MAPA (Leaflet): o mapa herda o tema do painel
+   ========================================================= */
+.leaflet-container {
+  background: var(--colors-muted);
+  font-family: var(--font-sans);
+  outline: none;
+}
+.leaflet-container .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--colors-sidebar) 85%, transparent);
+  color: var(--colors-muted-foreground);
+  font-size: 10px;
+}
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--colors-muted-foreground);
+}
+.leaflet-container .leaflet-control-zoom a {
+  background: var(--colors-sidebar);
+  color: var(--colors-foreground);
+  border-color: var(--colors-border);
+}
+.leaflet-container .leaflet-control-zoom a:hover {
+  background: var(--colors-accent);
+  color: var(--colors-accent-foreground);
+}
+.leaflet-bar {
+  border: 1px solid var(--colors-border) !important;
+}
+.leaflet-container .leaflet-tooltip {
+  background: var(--palette-light-surface);
+  color: var(--palette-light-text);
+  border: 1px solid var(--colors-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 8px;
+}
+.dark .leaflet-container .leaflet-tooltip {
+  background: var(--palette-dark-surface);
+  color: var(--palette-dark-text);
+}
+.leaflet-container .leaflet-tooltip-top::before {
+  border-top-color: var(--colors-border);
+}
+.leaflet-interactive:focus-visible {
+  outline: none;
+}
+/* Tema escuro: o OSM só tem tiles claros; inverter e girar o matiz mantém água azul e áreas verdes */
+.tiles-escuros {
+  filter: invert(1) hue-rotate(180deg) brightness(0.86) contrast(0.9) saturate(0.7);
+}

@@ -1,0 +1,101 @@
+/* Estados das células da CustomTable. O restante do visual é Tailwind no JSX.
+   Fora de @layer de propósito: estas regras vencem os utilitários de fundo e cor das células. */
+
+/* Resize Handle */
+.customTable .resize-handle {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 35;
+  transition: background-color var(--duracao-curta) var(--ease-cor);
+  display: flex;
+  justify-content: center;
+}
+
+/* Na última coluna o handle fica dentro do cabeçalho: os 3 px para fora criavam rolagem lateral em toda tabela */
+.customTable th:last-child .resize-handle {
+  right: 0;
+}
+
+.customTable .resize-handle::after {
+  content: "";
+  width: 1px;
+  height: 100%;
+  background-color: transparent;
+  transition: background-color var(--duracao-curta) var(--ease-cor);
+}
+
+.customTable .resize-handle:hover::after,
+.customTable .resize-handle.resizing::after {
+  background-color: var(--colors-primary);
+  width: 2px;
+}
+
+.customTable .resize-handle:hover {
+  background-color: color-mix(in srgb, var(--colors-primary) 20%, transparent);
+}
+
+.customTable .resize-handle.resizing {
+  background-color: color-mix(in srgb, var(--colors-primary) 40%, transparent);
+}
+
+/* Hover da linha no mesmo ritmo das células de dimensão; sem largura (acompanha o redimensionamento).
+   Só sob o cursor: transição em todas as células trava a pintura delas (cinza) ao trocar o tema. */
+.customTable tbody tr:hover > td {
+  background-color: var(--colors-custom-table-hover-bg);
+  transition-property: background-color, color, box-shadow;
+  transition-duration: var(--duracao-curta);
+  transition-timing-function: var(--ease-cor);
+}
+
+/* Célula selecionada: depois do hover da linha e com a mesma especificidade, para não ficar cinza sob o cursor */
+.customTable tbody tr > td.RowColumn-S {
+  background-color: var(--colors-custom-table-label);
+  color: var(--colors-primary-foreground);
+}
+
+/* Células de Dimensão (Selecionáveis) */
+.customTable .sn-table-dimension-cell {
+  cursor: pointer;
+}
+
+/* Lista ranqueada: a linha inteira é o alvo, e o hover marca a linha, não a célula */
+.customTable tr[data-linha-selecionavel] > td {
+  cursor: pointer;
+}
+
+/* :not(.RowColumn-S): logo após o clique o cursor ainda está sobre a linha selecionada, e o azul do hover
+   sumia o nome sobre o fundo azul da seleção */
+.customTable tr[data-linha-selecionavel]:hover > td:not(.RowColumn-S) {
+  color: var(--colors-custom-table-label);
+}
+
+/* Pressionar confirma o clique antes de a seleção chegar do engine (~250 ms) */
+.customTable tr[data-linha-selecionavel]:active > td:not(.RowColumn-S) {
+  background-color: var(--colors-custom-table-cell-hover-bg);
+}
+
+/* :not(.RowColumn-S): o hover vencia a seleção (0,3,0 contra 0,2,3) e a célula selecionada perdia o preenchimento sob o cursor */
+.customTable .sn-table-dimension-cell:not(.RowColumn-S):hover {
+  background-color: var(--colors-custom-table-cell-hover-bg); /* Fundo mais escuro para destaque */
+  box-shadow: inset 0 0 0 1px var(--colors-custom-table-label);
+  color: var(--colors-custom-table-label);
+}
+
+/* Coluna fixa na rolagem lateral: no escuro o fundo translúcido deixava o texto das colunas de baixo vazar;
+   o fundo opaco da página é o que a composição do translúcido dava. Célula selecionada fica de fora: o fundo da
+   página com o texto da seleção (mesma cor no escuro) apagava o nome clicado */
+.dark .customTable th.sticky,
+.dark .customTable td.sticky:not(.RowColumn-S) {
+  background-color: var(--palette-dark-background);
+}
+
+/* Hover do cabeçalho só sob o cursor, como nas linhas: a transição permanente no th (fundo translúcido com
+   backdrop-blur, cabeçalho grudado) deixava os cabeçalhos pintados com a cor do tema antigo ao trocar o tema */
+.customTable th:hover {
+  background-color: var(--colors-custom-table-hover-bg);
+  transition: background-color var(--duracao-curta) var(--ease-cor);
+}

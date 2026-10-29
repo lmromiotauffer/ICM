@@ -1,0 +1,15 @@
+{
+	"type": "mashup",
+	"name": "ICM - Painel do ICM",
+	"description": "Condição da malha rodoviária de Mato Grosso a partir dos levantamentos do ICM",
+	"preview": "",
+	"version": "1.0",
+	"author": "Cluster",
+	"homepage": "",
+	"keywords": "qlik-sense, visualization, mashup",
+	"license": "",
+	"repository": "",
+	"dependencies": {
+		"qlik-sense": ">=3.0.x"
+	}
+}

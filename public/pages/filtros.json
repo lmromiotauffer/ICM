@@ -1,0 +1,15 @@
+{
+  "filterpane": [
+    { "label": "Ano/mês", "expression": "Ano/Mês" },
+    { "label": "Rodovia", "expression": "Rodovia" },
+    { "label": "Região", "expression": "Região" },
+    { "label": "Tipo do segmento", "expression": "Tipo do segmento" },
+    { "label": "Condição do segmento", "expression": "Avaliação condição do segmento" },
+    { "label": "Município", "expression": "Município" },
+    { "label": "Avaliador", "expression": "Avaliador" },
+    { "label": "Trecho", "expression": "Trecho" },
+    { "label": "Obra em garantia (contrato)", "expression": "cdContrato" },
+    { "label": "Data da vistoria", "expression": "DTTEMPO" },
+    { "label": "Levantamento", "expression": "cdLevantamento" }
+  ]
+}
